@@ -8,6 +8,19 @@ import glob
 app = Flask(__name__)
 CORS(app)
 
+@app.route("/")
+def home():
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head><title>Flask Test</title></head>
+    <body>
+        <h2>Hello, Flask is running ✅</h2>
+        <p>If you see this page, the server is working fine.</p>
+    </body>
+    </html>
+    """
+
 @app.route("/download", methods=["POST"])
 def download_video():
     data = request.json
@@ -56,6 +69,5 @@ def download_video():
 
 
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
