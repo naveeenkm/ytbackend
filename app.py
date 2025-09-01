@@ -4,6 +4,7 @@ import yt_dlp
 import tempfile
 import os
 import glob
+import shutil
 
 app = Flask(__name__)
 CORS(app)
@@ -28,22 +29,24 @@ def download_video():
     if not link:
         return jsonify({"error": "No link provided"}), 400
 
+    tmpdir = tempfile.mkdtemp()
+    outtmpl = os.path.join(tmpdir, "video.%(ext)s")
+
+    ydl_opts = {
+        "outtmpl": outtmpl,
+        "format": "bv*+ba/best",
+        "merge_output_format": "mp4",
+        "noplaylist": True,
+        "quiet": True,
+    }
+
     try:
-        tmpdir = tempfile.mkdtemp()
-        outtmpl = os.path.join(tmpdir, "video.%(ext)s")
-
-        ydl_opts = {
-            "outtmpl": outtmpl,
-            "format": "bv*+ba/b",
-            "merge_output_format": "mp4"
-        }
-
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([link])
+            result = ydl.download([link])
 
         files = glob.glob(os.path.join(tmpdir, "video.*"))
         if not files:
-            return jsonify({"error": "No file created"}), 500
+            return jsonify({"error": "Download failed. YouTube may require login or captcha."}), 500
 
         filepath = files[0]
 
@@ -57,9 +60,8 @@ def download_video():
         @response.call_on_close
         def cleanup():
             try:
-                os.remove(filepath)
-                os.rmdir(tmpdir)
-            except:
+                shutil.rmtree(tmpdir)
+            except Exception:
                 pass
 
         return response
